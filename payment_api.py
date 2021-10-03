@@ -3,7 +3,8 @@ import gocardless_pro
 import requests
 import stripe
 import os
-from flask import Flask, redirect, request, render_template
+import json
+from flask import Flask, redirect, request, render_template, jsonify
 
 # to do - change html to flask render templates, copy stripe structure for GC and add buttons to the checkout html page to trigger different payment options
 
@@ -19,21 +20,30 @@ app = Flask(__name__,
             static_url_path='',
             static_folder='.')
 
-mandate_redirect_flow = client.redirect_flows.create(
-    params={
-        "description" : "Ale Casks", # This will be shown on the payment pages
-        "session_token" : "dummy_session_token", # Not the access token
-        "success_redirect_url" : "https://developer.gocardless.com/example-redirect-uri/",
-        "prefilled_customer": { # Optionally, prefill customer details on the payment page
-            "given_name": "Tim",
-            "family_name": "Rogers",
-            "email": "tim@gocardless.com",
-            "address_line1": "338-346 Goswell Road",
-            "city": "London",
-            "postal_code": "EC1V 7LQ"
-        }
-    }
-)
+YOUR_DOMAIN = 'http://localhost:4242'
+@app.route('/')
+def index():
+    return render_template('index.html')#, key=stripe_keys['publishable_key'])
+
+@app.route("/mandates", methods=['POST'])
+def create_mandate():
+    params = json.loads(request.data)
+    mandate_redirect_flow = client.redirect_flows.create(params)
+    return mandate_redirect_flow.redirect_url
+        # params={
+        #     "description" : "Ale Casks", # This will be shown on the payment pages
+        #     "session_token" : "dummy_session_token", # Not the access token
+        #     "success_redirect_url" : "https://developer.gocardless.com/example-redirect-uri/",
+        #     "prefilled_customer": { # Optionally, prefill customer details on the payment page
+        #         "given_name": "Tim",
+        #         "family_name": "Rogers",
+        #         "email": "tim@gocardless.com",
+        #         "address_line1": "338-346 Goswell Road",
+        #         "city": "London",
+        #         "postal_code": "EC1V 7LQ"
+        #     }
+        # }
+    # )
 
 DD_payment = client.payments.create(
     params={
@@ -75,10 +85,6 @@ DD_subscription = client.subscriptions.create(
 # })
 
 # stripe card payments
-YOUR_DOMAIN = 'http://localhost:4242'
-@app.route('/')
-def index():
-    return render_template('index.html')#, key=stripe_keys['publishable_key'])
 
 @app.route("/success")
 def success():
@@ -111,6 +117,7 @@ def create_checkout_session():
     except Exception as e:
         return str(e)
     return redirect(checkout_session.url, code=303)
+
 if __name__ == '__main__':
     app.run(port=4242)
 
