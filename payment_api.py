@@ -3,7 +3,7 @@ import gocardless_pro
 import requests
 import stripe
 import os
-from flask import Flask, redirect, request
+from flask import Flask, redirect, request, render_template
 
 # to do - change html to flask render templates, copy stripe structure for GC and add buttons to the checkout html page to trigger different payment options
 
@@ -76,6 +76,18 @@ DD_subscription = client.subscriptions.create(
 
 # stripe card payments
 YOUR_DOMAIN = 'http://localhost:4242'
+@app.route('/')
+def index():
+    return render_template('index.html')#, key=stripe_keys['publishable_key'])
+
+@app.route("/success")
+def success():
+    return render_template("success.html")
+
+@app.route('/cancelled')
+def cancelled():
+    return render_template("cancelled.html")
+
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
     try:
@@ -91,6 +103,8 @@ def create_checkout_session():
                 },
             ],
             mode='payment',
+            #success_url=YOUR_DOMAIN + "success?session_id={CHECKOUT_SESSION_ID}",
+            #cancel_url=YOUR_DOMAIN + 'cancelled',
             success_url=YOUR_DOMAIN + '/success.html',
             cancel_url=YOUR_DOMAIN + '/cancel.html',
         )
